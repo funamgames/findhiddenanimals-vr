@@ -73,15 +73,15 @@ AFRAME.registerComponent('hidden-animal', {
     },
 
     randomizePosition: function () {
-        // Position animal in FRONT of player at eye level (like a farm scene)
-        const distance = 5 + Math.random() * 5; // 5-10 meters away
+        // Position animal in FRONT of player at comfortable viewing height
+        const distance = 4 + Math.random() * 4; // 4-8 meters away (closer)
 
-        // Limit angle to front semicircle (-60 to +60 degrees from forward)
-        const angleRange = Math.PI / 3; // 60 degrees each side
-        const angle = (Math.random() - 0.5) * 2 * angleRange; // -60 to +60 degrees
+        // Limit angle to front area (-45 to +45 degrees from forward)
+        const angleRange = Math.PI / 4; // 45 degrees each side
+        const angle = (Math.random() - 0.5) * 2 * angleRange;
 
-        // Keep at eye level (1.2 to 1.8 meters - typical standing eye height)
-        const height = 1.2 + Math.random() * 0.6;
+        // Keep at lower height (0.5 to 1.2 meters - ground/waist level)
+        const height = 0.5 + Math.random() * 0.7;
 
         const x = Math.sin(angle) * distance;
         const z = -Math.cos(angle) * distance; // Negative Z = in front of player
