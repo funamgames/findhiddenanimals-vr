@@ -30,6 +30,26 @@ class GameManager {
                 this.renderAnimalGrid();
             });
         }
+
+        // Unlock audio on first user interaction (required for WebXR)
+        this.audioUnlocked = false;
+        const unlockAudio = () => {
+            if (this.audioUnlocked) return;
+            this.audioUnlocked = true;
+
+            // Play and immediately pause all audio to unlock them
+            document.querySelectorAll('audio').forEach(audio => {
+                audio.play().then(() => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                }).catch(() => { });
+            });
+
+            console.log('Audio unlocked!');
+        };
+
+        document.addEventListener('click', unlockAudio, { once: true });
+        document.addEventListener('touchstart', unlockAudio, { once: true });
     }
 
     setupEventListeners() {
