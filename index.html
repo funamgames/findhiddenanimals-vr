@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Find Hidden Animals VR</title>
+    <meta name="description" content="Find hidden animals in an immersive VR farm experience">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- A-Frame VR Library -->
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    
+    <!-- A-Frame Extras for better controls -->
+    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.0/dist/aframe-extras.min.js"></script>
+    
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Game UI Overlay (shown before entering VR) -->
+    <div id="game-ui">
+        <div id="start-screen" class="screen active">
+            <h1>🔍 Find Hidden Animals</h1>
+            <p>Find the hidden animal in the farm!</p>
+            
+            <div id="animal-select">
+                <h3>Select Animal</h3>
+                <div id="animal-grid"></div>
+            </div>
+            
+            <button id="start-btn" class="btn-primary">
+                <span class="vr-icon">🥽</span> Enter VR & Play
+            </button>
+            
+            <p class="hint">Point your controller at the farm and press trigger to search!</p>
+        </div>
+        
+        <div id="win-screen" class="screen">
+            <h1>🎉 Found it! 🎉</h1>
+            <div id="found-animal"></div>
+            <p id="final-score"></p>
+            <button id="play-again-btn" class="btn-primary">Play Again 🔄</button>
+        </div>
+    </div>
+
+    <!-- A-Frame VR Scene -->
+    <a-scene 
+        id="vr-scene"
+        vr-mode-ui="enterVRButton: #start-btn"
+        renderer="antialias: true; colorManagement: true"
+        loading-screen="dotsColor: #4CAF50; backgroundColor: #1a1a2e">
+        
+        <!-- Assets -->
+        <a-assets>
+            <!-- Farm Environment -->
+            <img id="sky-texture" src="assets/images/farm_bg.png">
+            <img id="grass-texture" src="https://cdn.aframe.io/a-painter/images/floor.jpg">
+            
+            <!-- Animal Images -->
+            <img id="cow-img" src="assets/images/cow.png">
+            <img id="pig-img" src="assets/images/pig.png">
+            <img id="chicken-img" src="assets/images/chicken.png">
+            <img id="sheep-img" src="assets/images/sheep.png">
+            <img id="horse-img" src="assets/images/horse.png">
+            
+            <!-- Audio -->
+            <audio id="bell-sound" src="assets/audio/s_bell.mp3" preload="auto"></audio>
+            <audio id="cow-sound" src="assets/audio/s_cow.mp3" preload="auto"></audio>
+            <audio id="pig-sound" src="assets/audio/s_pig.mp3" preload="auto"></audio>
+            <audio id="chicken-sound" src="assets/audio/s_chicken.mp3" preload="auto"></audio>
+            <audio id="sheep-sound" src="assets/audio/s_sheep.mp3" preload="auto"></audio>
+            <audio id="horse-sound" src="assets/audio/s_horse.mp3" preload="auto"></audio>
+        </a-assets>
+
+        <!-- Skybox - Farm Background (360 panorama) -->
+        <a-sky src="#sky-texture" rotation="0 -90 0"></a-sky>
+        
+        <!-- Ground Plane -->
+        <a-plane 
+            position="0 0 0" 
+            rotation="-90 0 0" 
+            width="50" 
+            height="50"
+            color="#7CBA5F"
+            shadow="receive: true">
+        </a-plane>
+        
+        <!-- Ambient Lighting -->
+        <a-light type="ambient" color="#FFF" intensity="0.6"></a-light>
+        <a-light type="directional" position="1 2 1" intensity="0.8" castShadow="true"></a-light>
+
+        <!-- Hidden Animal (will be positioned by JS) -->
+        <a-entity 
+            id="hidden-animal"
+            hidden-animal
+            position="0 1.5 -5"
+            visible="false">
+            <a-image 
+                id="animal-sprite"
+                src="#cow-img"
+                width="1"
+                height="1"
+                look-at="[camera]"
+                opacity="0.05">
+            </a-image>
+            <!-- Visible indicator when found -->
+            <a-image 
+                id="animal-revealed"
+                src="#cow-img"
+                width="1.5"
+                height="1.5"
+                look-at="[camera]"
+                visible="false"
+                animation__scale="property: scale; from: 0.1 0.1 0.1; to: 1 1 1; dur: 500; easing: easeOutElastic">
+            </a-image>
+        </a-entity>
+
+        <!-- Hot/Cold Feedback Indicator -->
+        <a-entity id="feedback-indicator" position="0 0 0" visible="false">
+            <a-sphere radius="0.1" material="color: #4CAF50; opacity: 0.8; transparent: true"></a-sphere>
+            <a-text value="" align="center" position="0 0.2 0" scale="0.5 0.5 0.5" look-at="[camera]"></a-text>
+        </a-entity>
+
+        <!-- Player Rig -->
+        <a-entity id="rig" movement-controls="fly: false">
+            <!-- Camera -->
+            <a-entity 
+                id="camera" 
+                camera 
+                position="0 1.6 0"
+                look-controls="pointerLockEnabled: false">
+                
+                <!-- VR HUD - Score Display -->
+                <a-entity id="hud" position="0 0.1 -0.5" visible="false">
+                    <a-plane 
+                        width="0.3" 
+                        height="0.08" 
+                        color="#000" 
+                        opacity="0.7"
+                        position="0 0 0">
+                    </a-plane>
+                    <a-text 
+                        id="score-text"
+                        value="Score: 1000" 
+                        align="center" 
+                        color="#4CAF50"
+                        scale="0.15 0.15 0.15"
+                        position="0 0 0.01">
+                    </a-text>
+                </a-entity>
+                
+                <!-- Cursor for non-VR (desktop/mobile) -->
+                <a-cursor 
+                    id="cursor"
+                    fuse="true"
+                    fuse-timeout="1500"
+                    raycaster="objects: #hidden-animal"
+                    color="#4CAF50"
+                    animation__fusing="property: scale; startEvents: fusing; from: 1 1 1; to: 0.5 0.5 0.5; dur: 1500">
+                </a-cursor>
+            </a-entity>
+            
+            <!-- VR Controllers -->
+            <a-entity 
+                id="left-hand"
+                hand-controls="hand: left; handModelStyle: lowPoly"
+                laser-controls="hand: left"
+                raycaster="objects: #hidden-animal; far: 100">
+            </a-entity>
+            
+            <a-entity 
+                id="right-hand"
+                hand-controls="hand: right; handModelStyle: lowPoly"
+                laser-controls="hand: right"
+                raycaster="objects: #hidden-animal; far: 100"
+                vr-pointer>
+            </a-entity>
+        </a-entity>
+
+        <!-- Confetti Entity (for win celebration) -->
+        <a-entity id="confetti" position="0 3 0" visible="false">
+            <a-entity 
+                particle-system="preset: dust; color: #FFD700, #4CAF50, #FF6B6B, #4169E1; particleCount: 500; size: 0.3; dur: 3000; velocityValue: 0 -3 0; velocitySpread: 2 2 2">
+            </a-entity>
+        </a-entity>
+    </a-scene>
+
+    <!-- Game Scripts -->
+    <script src="js/animals.js"></script>
+    <script src="js/components/hidden-animal.js"></script>
+    <script src="js/components/vr-pointer.js"></script>
+    <script src="js/game-manager.js"></script>
+</body>
+</html>
